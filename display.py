@@ -4,9 +4,9 @@ import mpl_toolkits.mplot3d.axes3d as p3
 #import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 
-outpath = 'test_2022.out'
+outpath = 'big_plummer.out'
 out = np.loadtxt(outpath)
-nb_obj = 200
+nb_obj = 2000
 nsteps = 2000
 sampling = 5
 nframes = int(nsteps / sampling)
