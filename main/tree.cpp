@@ -2,8 +2,12 @@
 
 mutex force_lock;
 
-tree::tree(array<array<double,2>,3> const& bounds)
-    :root(bounds) , boundaries(bounds)
+// External Plummer TODO: better implementation, in view of Mestel etc
+double a_P = 3.0857e16 * 10.0;
+double M_P = 1.98847e30 * 6.0e4;
+
+tree::tree(array<array<double,2>,3> const& bounds, bool const& sg)
+    :root(bounds) , boundaries(bounds), self_gravity(sg)
 {}
 
 bool tree::inside(valarray<double> const& v) const
@@ -26,10 +30,24 @@ void tree::display() const
     root.display(0);
 }
 
+valarray<double> tree::plummer_ext_force(body const& B) const
+{
+    valarray<double> p = B.getpos();
+    double p2 = p[0]*p[0] + p[1]*p[1] + p[2]*p[2];
+    return -phys::G * M_P * p / pow(p2+a_P*a_P,1.5);
+}
 
 valarray<double> tree::force_on_body(body const& B) const
 {
-    return root.force_on_body(B) / B.getmass();
+    if (self_gravity)
+    {
+        return root.force_on_body(B) / B.getmass();
+        //return root.force_on_body(B) / B.getmass() + plummer_ext_force(B);
+    }
+    else
+    {
+        return plummer_ext_force(B); // no self-gravity, use external potential (see above + todo)
+    }
 }
 
 void tree::force_thread(const vector<body> & bodies,valarray<double> & forces, size_t start, size_t end) const

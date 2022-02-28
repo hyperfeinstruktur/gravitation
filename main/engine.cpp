@@ -33,7 +33,7 @@ void engine::printOut(bool force){
 
 
 engine::engine(int argc, char* argv[])
-    : octree({{{0,0},{0,0},{0,0}}})
+    : octree({{{0,0},{0,0},{0,0}}},1)
 {
 
     // ====== Global Parameter Initialization //
@@ -54,6 +54,7 @@ engine::engine(int argc, char* argv[])
     outputFile = new ofstream(configFile.get<string>("output").c_str());
     outputFile->precision(15);
 
+    // Display
     cout << "Loaded configuration file   : '" << inputPath << "'." << endl;
     cout << "Writing to output file      : '";
     cout << configFile.get<string>("output").c_str() << "'." << endl;
@@ -62,16 +63,16 @@ engine::engine(int argc, char* argv[])
     tF     =                configFile.get<double>("tFin");
     dt =                 tF/configFile.get<double>("nsteps");
     sampling 		 =      configFile.get<double>("sampling");
-
+    self_gravity = configFile.get<bool>("self_gravity");
      
     
     // Tree Init
     double inf = pc_in_meters*configFile.get<double>("inf");
     double sup = pc_in_meters*configFile.get<double>("sup");
-    octree = tree({{ {inf,sup} , {inf,sup} , {inf,sup} }}); // Cubic Domain
+    octree = tree({{ {inf,sup} , {inf,sup} , {inf,sup} }},self_gravity); // Cubic Domain
     nb_obj = configFile.get<double>("nb_obj");
 
-    // ==== Bodies Initialization ==== //
+    // Bodies Initialization
     for (size_t j(1) ; j<=nb_obj ; ++j)
     {
         body to_add = body( pc_in_meters*configFile.get<double>("y" + to_string(j) + "_" + "1") , \
@@ -96,6 +97,7 @@ engine::engine(int argc, char* argv[])
     unsigned int nb = configFile.get<double>("nsteps");
     cout << "Construction Done. Initialized Simulation with the following parameters: " << endl << endl;
     cout << "Number of Bodies:                           " << nb_obj << endl;
+    cout << "Self Gravity (1: on, 0: off):               " << self_gravity << endl;
     cout << "Simulation endtime (millions of years):     " << tF/(86400 * 1e6) << endl;
     cout << "Number of steps:                            " << nb << endl;
     cout << "Timestep (seconds):                         " << dt << endl;
@@ -132,14 +134,26 @@ void disp(valarray<double> v)
 
 void engine::leapfrog_step()
 {
-    valarray<double> xi = getbodies_pos();
-    valarray<double> vi = getbodies_vel();
-    octree.build(bodies);
-    valarray<double> ai = octree.force_on_bodies(bodies,1);
-    setbodies_pos(xi + dt*vi + 0.5*ai*dt*dt);
-    octree.build(bodies);
-    valarray<double> aip1 = octree.force_on_bodies(bodies,1);
-    setbodies_vel(vi + 0.5*(ai+aip1)*dt);
+    if (self_gravity)
+    {
+            valarray<double> xi = getbodies_pos();
+            valarray<double> vi = getbodies_vel();
+            octree.build(bodies);
+            valarray<double> ai = octree.force_on_bodies(bodies,1);
+            setbodies_pos(xi + dt*vi + 0.5*ai*dt*dt);
+            octree.build(bodies);
+            valarray<double> aip1 = octree.force_on_bodies(bodies,1);
+            setbodies_vel(vi + 0.5*(ai+aip1)*dt);
+    }
+    else
+    {
+            valarray<double> xi = getbodies_pos();
+            valarray<double> vi = getbodies_vel();
+            valarray<double> ai = octree.force_on_bodies(bodies,1);
+            setbodies_pos(xi + dt*vi + 0.5*ai*dt*dt);
+            valarray<double> aip1 = octree.force_on_bodies(bodies,1);
+            setbodies_vel(vi + 0.5*(ai+aip1)*dt);
+    }
 }
 
 void engine::run_leapfrog()

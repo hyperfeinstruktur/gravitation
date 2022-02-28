@@ -197,9 +197,9 @@ valarray<double> law_of_gravity(valarray<double> const& i , valarray<double> con
 {
     if ( mi>1e-10 && mj>1e-10 )
     {
-        //valarray <double> F = (-phys::G*mi*mj) * pow( (1/norm_3d(i-j)) , 3 ) * (i-j);
+        valarray <double> F = (-phys::G*mi*mj) * pow( (1/norm_3d(i-j)) , 3 ) * (i-j);
         double r_temp = norm_3d(i-j);
-        valarray <double> F = (-phys::G*mi*mj) * pow((pow(r_temp,2) + phys::softening_length),-1.5) * (i-j)/r_temp;
+        //valarray <double> F = (-phys::G*mi*mj) * pow((pow(r_temp,2) + phys::softening_length),-1.5) * (i-j)/r_temp;
         return -F;
     }
     else

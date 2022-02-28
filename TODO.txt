@@ -1,2 +1,4 @@
 - Implement softening parameter
-- GitHub
+- Better implementation of Plummer ext potential
+- Streamline IC generation
+- Automate readme creation

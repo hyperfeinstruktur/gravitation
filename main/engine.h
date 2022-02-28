@@ -68,5 +68,6 @@ private:
     double dt;            // Timestep for fixed alg
     double t;             // Current time
     ofstream *outputFile; // Output File
+    bool self_gravity;    // Self Gravity on/off (use only external potential)
 };
 

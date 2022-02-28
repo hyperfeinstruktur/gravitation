@@ -14,7 +14,7 @@ class tree
 {
 public:
     // root boundaries and gravitational constant to be used
-    tree(array<array<double,2>,3> const&);
+    tree(array<array<double,2>,3> const&,bool const&);
 
     // Builds the tree from the positions of the particles provided in argument
     void build(vector<body> const&);
@@ -32,6 +32,8 @@ private:
     // Root of the tree (node at level 0)
     tree_node root;
 
+    bool self_gravity;
+
     array<array<double,2>,3> boundaries;
 
     valarray<double> bodies_attraction(body const&, body const&) const;
@@ -39,6 +41,8 @@ private:
     valarray<double> law_of_gravity(valarray<double> const&, valarray<double> const&, double const&, double const&) const;
 
     void force_thread(vector<body> const&,valarray<double>&,size_t,size_t) const;
+
+    valarray<double> plummer_ext_force(body const&) const;
 };
 
 #endif // TREE_H

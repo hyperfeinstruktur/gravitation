@@ -14,7 +14,7 @@ def relative_energy(r,v,a,M):
     return relative_potential(r,a,M) - 0.5 * v**2
 
 def DF(r,v,a,M):
-    A = 24. * np.sqrt(2) / (7*np.pi)
+    A = 24. * np.sqrt(2) / (7*np.pi**3)
     eps = relative_energy(r,v,a,M)
     if eps < 0: return 0
     else : return A * G**(-5.) * M**(-4.) * a**2 * eps**(3.5)
@@ -26,19 +26,23 @@ def v_max(r,a,M):
 
 def sample_velocity(r,a,M):
     v_e = v_max(r,a,M)
-    x = 0.
-    y = 0.
+    # x = 0.
+    # y = 0.
+    # while True:
+    #     x = v_e*np.random.uniform(0.,1.)
+    #     y = DF(r,0.,a,M)*np.random.uniform(0.,1.) # The DF is maximal at r=0 (analytic)
+    #     if y < DF(r,x,a,M) and x < v_max(r,a,M): return x,y
     while True:
-        x = v_e*np.random.uniform(0.,1.)
-        y = DF(r,0.,a,M)*np.random.uniform(0.,1.) # The DF is maximal at r=0 (analytic)
-        if y < DF(r,x,a,M) and x < v_max(r,a,M): return x,y
+        X4 = np.random.uniform()
+        X5 = np.random.uniform()
+        if 0.1*X5 < (X4**2*(1.-X4**2)**(3.5)): return X4*v_e, X5*v_e
 
 
 
 # Model Parameters
-a = 5     # pc
-M = 4.0e4  # solar mass
-N = 4000    #-
+a = 10     # pc
+M = 6.0e4  # solar mass
+N = 200    #-
 
 # Generate Positions
 m_rand = M*np.random.uniform(0.0,1.0,N)
@@ -73,14 +77,15 @@ m = M/N * np.ones(N)
 # Pickle results
 if 1:
     with open('X.pkl','wb') as f:
-        pkl.dump(X,f)
+        pkl.dump(X[:],f)
 
     with open('V.pkl','wb') as f:
-        pkl.dump(V,f)
+        pkl.dump(V[:],f)
+        #pkl.dump(np.zeros(V.shape),f)
 
     with open('M.pkl','wb') as f:
-        pkl.dump(m,f)
+        pkl.dump(m[:],f)
 
 
-plt.scatter(x,y,s=0.4)
-plt.show()
+# plt.scatter(x,y,s=0.4)
+# plt.show()
