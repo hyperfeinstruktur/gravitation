@@ -1,5 +1,5 @@
 # Gravitation
-A Simple, C++ N-Body Treecode
+A Simple C++ N-Body Treecode
 
 ## Usage
 Makefile included, only c++ compiler needed. Generate initial conditions formatted as in the example _.in_ file, compile main program and execute using the syntax:
