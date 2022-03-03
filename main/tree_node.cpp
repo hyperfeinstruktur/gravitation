@@ -5,12 +5,10 @@
 #include <memory>
 
 // Utilitaries, defined below
-double norm_3d(valarray<double> const& v);
-valarray<double> law_of_gravity(valarray<double> const&, valarray<double> const&, double const&, double const&);
-valarray<double> bodies_attraction(body const&, body const&);
-
-
-
+double           norm_3d(valarray<double> const& v);
+double           grav_pot(valarray<double> const&, valarray<double> const&, double const&, double const&);
+valarray<double> grav_force(valarray<double> const&, valarray<double> const&, double const&, double const&);
+valarray<double> grav_force_pot(valarray<double> const&, valarray<double> const&, double const&, double const&);
 
 
 
@@ -126,30 +124,112 @@ void tree_node::update_com(const body & B)
 }
 
 
+// valarray<double> tree_node::force_on_body(body const& B) const
+// {
+//     if (not empty)
+//     {
+//         double d = norm_3d(B.getpos() - center_of_mass.getpos());
+//         if ((d < phys::newton_limit)) { return {0,0,0};} // TODO: remove newton_limit (replaced by softening)
+
+//         if (ext || (s/d < phys::barnes_hut_theta))
+//         {
+//             //return bodies_attraction(B,center_of_mass);
+//             return -grav_force(B.getpos(), center_of_mass.getpos(), B.getmass(), center_of_mass.getmass());
+//         }
+//         else
+//         {
+//             valarray<double> F = {0,0,0};
+//             for (auto const& sub : children)
+//             {
+//                 F+=sub->force_on_body(B);
+//             }
+//             return F;
+//         }
+//     }
+//     else return {0,0,0};
+// }
 valarray<double> tree_node::force_on_body(body const& B) const
 {
-    if (not empty)
-    {
-        double d = norm_3d(B.getpos() - center_of_mass.getpos());
-        if ((d < phys::newton_limit)) { return {0,0,0};}
+    double d = norm_3d(B.getpos() - center_of_mass.getpos());
+    if ((d < phys::newton_limit)) { return {0,0,0};} // TODO: remove newton_limit (replaced by softening)
 
-        if (ext || (s/d < phys::barnes_hut_theta))
-        {
-            return bodies_attraction(B,center_of_mass);
-        }
-        else
-        {
-            valarray<double> F = {0,0,0};
-            for (auto const& sub : children)
-            {
-                F+=sub->force_on_body(B);
-            }
-            return F;
-        }
+    if (ext || (s/d < phys::barnes_hut_theta))
+    {
+        //return bodies_attraction(B,center_of_mass);
+        return -grav_force(B.getpos(), center_of_mass.getpos(), B.getmass(), center_of_mass.getmass());
     }
-    else return {0,0,0};
+    else
+    {
+        valarray<double> F = {0,0,0};
+        for (auto const& sub : children)
+        {
+            if (not sub->empty) {F+=sub->force_on_body(B);}
+        }
+        return F;
+    }
+
 }
 
+// ==== UTILITARIES === //
+
+// 3-norm
+double norm_3d(valarray<double> const& v)
+{
+    return sqrt( v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
+
+// Gravitational Potential
+double grav_pot(valarray<double> const& i , valarray<double> const& j, double const& mj)
+{
+    if ( mj>1e-10 )
+    {
+        return -phys::G * mj / norm_3d(i-j);
+    }
+    else
+    {
+        throw 3;
+    }
+}
+
+// Gravitational Force
+valarray<double> grav_force(valarray<double> const& i , valarray<double> const& j, double const& mi, double const& mj)
+{
+    if ( mi>1e-10 && mj>1e-10 )
+    {
+        return phys::G*mi*mj*(i-j) / pow( pow(norm_3d(i-j),2) + phys::softening_length , 1.5);
+        //double d = norm_3d(i-j);
+        //return phys::G*mi*mj*(i-j) / pow( d*d + phys::softening_length , 1.5);
+        //valarray <double> F = (-phys::G*mi*mj) * pow( (1/norm_3d(i-j)) , 3 ) * (i-j);
+        //double r_temp = norm_3d(i-j);
+        //valarray <double> F = (-phys::G*mi*mj) * pow((pow(r_temp,2) + phys::softening_length),-1.5) * (i-j)/r_temp;
+        //return -F;
+    }
+    else
+    {
+        throw 3;
+    }
+};
+
+// Gravitational Force + Potential (returns size 4 vector: (Fx,Fy,Fz,phi)) TODO: implement softening
+valarray<double> grav_force_pot(valarray<double> const& i , valarray<double> const& j, double const& mi, double const& mj)
+{
+    if ( mi>1e-10 && mj>1e-10 )
+    {
+        valarray<double> temp(4);
+        double d = norm_3d(i-j);
+        temp[3] = -phys::G * mj / d ;
+        temp[slice(0,3,1)] = -phys::G*mi*mj*(i-j) / pow(d,3);
+        return temp;
+    }
+    else
+    {
+        throw 3;
+    }
+};
+
+
+
+//////////// Old Testing methods
 void tree_node::display_bounds(int const& lvl) const
 {
     string spaces;
@@ -181,35 +261,4 @@ void tree_node::display(int const& lvl) const
     {
        cout << spaces << "This node is external" << endl;
     }
-}
-
-
-// ==== UTILITARIES === //
-
-// 3-norm
-double norm_3d(valarray<double> const& v)
-{
-    return sqrt( v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-}
-
-// Gravitational Force
-valarray<double> law_of_gravity(valarray<double> const& i , valarray<double> const& j, double const& mi, double const& mj)
-{
-    if ( mi>1e-10 && mj>1e-10 )
-    {
-        valarray <double> F = (-phys::G*mi*mj) * pow( (1/norm_3d(i-j)) , 3 ) * (i-j);
-        double r_temp = norm_3d(i-j);
-        //valarray <double> F = (-phys::G*mi*mj) * pow((pow(r_temp,2) + phys::softening_length),-1.5) * (i-j)/r_temp;
-        return -F;
-    }
-    else
-    {
-        throw 3;
-    }
-};
-
-// Attraction between 2 bodies
-valarray<double> bodies_attraction(body const& A, body const& B)
-{
-    return -law_of_gravity(A.getpos(), B.getpos(), A.getmass(), B.getmass());
 }
